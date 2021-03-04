@@ -144,11 +144,11 @@ class LidarX2:
         cs = ord(csL) + ord(csM) * 256             #concat les deux                 0x4b39
         # Read and parse data
         data = self.serial.read(sampleCount*2)     #0x19 * 2 car 2bytes par data =  0x32    dec->50
-        for i in range(0, sampleCount*2, 2):
+        for i in range(0, sampleCount*2, 2):       #lecture 2 bytes par 2 bytes
             # Get distance
-            siL = data[i]
-            siM = data[i+1]
-            checksum ^= ((siL) + (siM) * 256)
+            siL = data[i]                          #least significant byte
+            siM = data[i+1]                        #most significant byte
+            checksum ^= ((siL) + (siM) * 256)      
             distance = float((siL) + (siM) * 256)/4
             # Get angle and correct value from distance
             angle = startAngle+(aDiff/float(sampleCount))*i/2
@@ -166,3 +166,12 @@ class LidarX2:
         if checksum == cs:
             return result
         return []
+
+#Data start bytes | 2 
+#Packet type      | 1
+#Sample count     | 1
+#Start angle      | 2
+#End angle        | 2
+#Checksum         | 2
+#Data             | 2 * sampleCount
+#  https://github.com/YDLIDAR/YDLidar-SDK/blob/master/doc/YDLidar-SDK-Communication-Protocol.md
