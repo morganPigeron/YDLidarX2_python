@@ -108,42 +108,42 @@ class LidarX2:
         found = False
         checksum = 0x55AA
         while not found and not self.stopThread:
-            while self.serial.read(1) != b"\xaa":
+            while self.serial.read(1) != b"\xaa":  #print(bin(0xaa)) -> 0b10101010  0xaa
                 pass
-            if self.serial.read(1) == b"\x55":
+            if self.serial.read(1) == b"\x55":     #print(bin(0x55)) -> 0b01010101  0x55
                 found = True
         if self.stopThread:
             return []
         # Check packet type
-        ct = self.serial.read(1)
+        ct = self.serial.read(1)                   #read                            0x00 
         if ct != b"\x00":
             return result
         # Get sample count in packet
-        ls = self.serial.read(1)
+        ls = self.serial.read(1)                   #read                            0x19
         sampleCount = int(ls.hex(), 16)
         if sampleCount == 0:
             return result
         # Get start angle
-        fsaL = self.serial.read(1)
-        fsaM = self.serial.read(1)
-        fsa = ord(fsaL) + ord(fsaM) * 256
-        checksum ^= fsa
-        startAngle = (fsa>>1)/64
+        fsaL = self.serial.read(1)                 #read                            0x1f         
+        fsaM = self.serial.read(1)                 #read                            0x5d
+        fsa = ord(fsaL) + ord(fsaM) * 256          #lecture LSB (*256 0b 100000000) 0x5d1f
+        checksum ^= fsa                            # ? 0x08b5
+        startAngle = (fsa>>1)/64                   # ? 186.234375 deg
         # Get end angle
-        lsaL = self.serial.read(1)
-        lsaM = self.serial.read(1)
-        lsa = ord(lsaL) + ord(lsaM) * 256
-        endAngle = (lsa>>1)/64
+        lsaL = self.serial.read(1)                 #read                            0xf7
+        lsaM = self.serial.read(1)                 #read                            0x65
+        lsa = ord(lsaL) + ord(lsaM) * 256          #concat les deux                 0x65f7
+        endAngle = (lsa>>1)/64                     # ? 203.921875 deg
         # Compute angle diff
-        aDiff = float(endAngle - startAngle)
-        if (aDiff < 0):
+        aDiff = float(endAngle - startAngle)       # 17.6875 deg
+        if (aDiff < 0):                            # toujours un angle absolu
             aDiff = aDiff + 360
         # Get checksum
-        csL = self.serial.read(1)
-        csM = self.serial.read(1)
-        cs = ord(csL) + ord(csM) * 256
+        csL = self.serial.read(1)                  #read                            0x39
+        csM = self.serial.read(1)                  #read                            0x4b 
+        cs = ord(csL) + ord(csM) * 256             #concat les deux                 0x4b39
         # Read and parse data
-        data = self.serial.read(sampleCount*2)
+        data = self.serial.read(sampleCount*2)     #0x19 * 2 car 2bytes par data =  0x32    dec->50
         for i in range(0, sampleCount*2, 2):
             # Get distance
             siL = data[i]
